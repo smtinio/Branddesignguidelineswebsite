@@ -41,6 +41,13 @@ jobs:
           ls -la || true
           echo "--- ENV GITHUB ---"
           env | grep GITHUB || true
+      - name: Deploy using personal token (optional)
+        if: secrets.GH_PAGES_PAT != ''
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.GH_PAGES_PAT }}
+          publish_dir: ./build
+          publish_branch: gh-pages
 
       - name: Configure Pages
         uses: actions/configure-pages@v3
@@ -74,5 +81,6 @@ jobs:
           echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
           env | grep GITHUB || true
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages (official)
+        if: secrets.GH_PAGES_PAT == ''
         uses: actions/deploy-pages@v1
