@@ -5,8 +5,13 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,14 +22,57 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build
         run: npm run build
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Build diagnostics
+        run: |
+          echo "--- GIT VERSION ---"
+          git --version || true
+          echo "--- GIT REMOTE ---"
+          git remote -v || true
+          echo "--- GIT BRANCH ---"
+          git branch --show-current || true
+          echo "--- GIT CONFIG ---"
+          git config --list || true
+          echo "--- WORKSPACE LISTING ---"
+          ls -la || true
+          echo "--- ENV GITHUB ---"
+          env | grep GITHUB || true
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
-          publish_branch: gh-pages
+          path: ./build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy diagnostics (checkout)
+        uses: actions/checkout@v4
+
+      - name: Deploy diagnostics (info)
+        run: |
+          echo "--- GIT VERSION ---"
+          git --version || true
+          echo "--- REMOTE ---"
+          git remote -v || true
+          echo "--- CURRENT BRANCH ---"
+          git branch --show-current || true
+          echo "--- GITHUB CONTEXT ---"
+          echo "GITHUB_REF=$GITHUB_REF"
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
+          env | grep GITHUB || true
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
