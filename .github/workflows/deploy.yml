@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,60 +27,11 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Build diagnostics
-        run: |
-          echo "--- GIT VERSION ---"
-          git --version || true
-          echo "--- GIT REMOTE ---"
-          git remote -v || true
-          echo "--- GIT BRANCH ---"
-          git branch --show-current || true
-          echo "--- GIT CONFIG ---"
-          git config --list || true
-          echo "--- WORKSPACE LISTING ---"
-          ls -la || true
-          echo "--- ENV GITHUB ---"
-          env | grep GITHUB || true
-      - name: Deploy using personal token (optional)
-        if: secrets.GH_PAGES_PAT != ''
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.GH_PAGES_PAT }}
-          publish_dir: ./build
-          publish_branch: gh-pages
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v3
-
-      - name: Upload build artifact
-        uses: actions/upload-pages-artifact@v1
+      - name: Upload build to Pages
+        uses: actions/upload-pages-artifact@v2
         with:
           path: ./build
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - name: Deploy diagnostics (checkout)
-        uses: actions/checkout@v4
-
-      - name: Deploy diagnostics (info)
-        run: |
-          echo "--- GIT VERSION ---"
-          git --version || true
-          echo "--- REMOTE ---"
-          git remote -v || true
-          echo "--- CURRENT BRANCH ---"
-          git branch --show-current || true
-          echo "--- GITHUB CONTEXT ---"
-          echo "GITHUB_REF=$GITHUB_REF"
-          echo "GITHUB_SHA=$GITHUB_SHA"
-          echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
-          env | grep GITHUB || true
-
-      - name: Deploy to GitHub Pages (official)
-        if: secrets.GH_PAGES_PAT == ''
-        uses: actions/deploy-pages@v1
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
